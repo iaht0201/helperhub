@@ -18,6 +18,7 @@ node_modules/
 .env.*
 !.env.example
 appsettings.Development.json
+FULL_ENV_SETUP_NOTE.txt
 
 # Logs
 logs/
