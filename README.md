@@ -1,6 +1,6 @@
-# PROJOB - Hệ thống Tìm kiếm Việc làm & Tuyển dụng Hiện đại
+# HelperHub - Hệ thống Tìm kiếm Việc làm & Tuyển dụng Hiện đại
 
-Dự án PROJOB là một nền tảng tuyển dụng thông minh, giúp kết nối Nhà tuyển dụng và Người tìm việc hiệu quả hơn. Hệ thống tích hợp các gói hội viên (Pro/Pro Max), thanh toán trực tuyến và thông báo thời gian thực.
+Dự án HelperHub là một nền tảng tuyển dụng thông minh, giúp kết nối Nhà tuyển dụng và Người tìm việc hiệu quả hơn. Hệ thống tích hợp các gói hội viên (Pro/Pro Max), thanh toán trực tuyến và thông báo thời gian thực.
 
 ---
 
@@ -89,4 +89,4 @@ Khi test MoMo/VNPay IPN (xác nhận thanh toán tự động), bạn **phải**
 - [Cấu hình MoMo](momo_integration_guide.md)
 
 ---
-*Phát triển bởi đội ngũ PROJOB. Chúc bạn tuyển dụng thành công!*
+*Phát triển bởi đội ngũ HelperHub. Chúc bạn tuyển dụng thành công!*

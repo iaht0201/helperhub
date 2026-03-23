@@ -1,6 +1,6 @@
-# Tài liệu Tích hợp Thanh toán MoMo (Sandbox) - PROJOB
+# Tài liệu Tích hợp Thanh toán MoMo (Sandbox) - HelperHub
 
-Tài liệu này hướng dẫn cách sử dụng và cấu hình tính năng thanh toán MoMo đã tích hợp trong hệ thống PROJOB.
+Tài liệu này hướng dẫn cách sử dụng và cấu hình tính năng thanh toán MoMo đã tích hợp trong hệ thống HelperHub.
 
 ## 1. Quy trình thanh toán (Payment Flow)
 

@@ -81,7 +81,7 @@ namespace WebTimViec.Api.Controllers
             if (package == null) return BadRequest("Gói dịch vụ không hợp lệ");
 
             string txnRef = $"{userIdStr}_{package.Code}_{VNTime.Now.Ticks}";
-            string orderInfo = $"Thanh toan {package.Code} cho PROJOB"; // STRICT ASCII ONLY
+            string orderInfo = $"Thanh toan {package.Code} cho HelperHub"; // STRICT ASCII ONLY
             string ipAddr = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
 
             string payUrl = _vnPayService.CreatePaymentUrl(txnRef, package.Price, orderInfo, ipAddr);

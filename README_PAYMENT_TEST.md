@@ -1,6 +1,6 @@
-# Hướng Dẫn Test Thanh Toán (Sandbox Environment) - PROJOB
+# Hướng Dẫn Test Thanh Toán (Sandbox Environment) - HelperHub
 
-Tài liệu này cung cấp thông tin cần thiết để kiểm tra tính năng thanh toán MoMo và VNPay trên website **PROJOB**.
+Tài liệu này cung cấp thông tin cần thiết để kiểm tra tính năng thanh toán MoMo và VNPay trên website **HelperHub**.
 
 ---
 
