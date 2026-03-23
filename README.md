@@ -30,7 +30,8 @@ Dự án HelperHub là một nền tảng tuyển dụng thông minh, giúp kế
 > **Ưu điểm khi dùng Docker**: Tự động cấu hình Nginx để tránh lỗi CORS. Cả Frontend và Backend sẽ chạy chung một domain ảo, giúp việc tích hợp thanh toán (Ngrok) trở nên cực kỳ đơn giản.
 
 ### 1. Khởi động hệ thống
-Mở terminal tại thư mục gốc và chạy:
+1. Copy file `.env.example` trong thư mục `WebTimViec.Api/` thành `.env`.
+2. Mở terminal tại thư mục gốc và chạy:
 ```bash
 docker-compose up --build
 ```
@@ -140,4 +141,4 @@ Giao diện người dùng hiện đại, mượt mà.
 - [Huớng dẫn Test Thanh toán chuyên sâu](README_PAYMENT_TEST.md)
 
 ---
-*Phát triển bởi đội ngũ HelperHub. Chúc bạn tuyển dụng thành công!*
+*Bài test web tìm kiếm việc làm!*

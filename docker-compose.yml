@@ -30,20 +30,23 @@ services:
     ports:
       - "5281:5281"
     env_file:
-      - WebTimViec.Api/.env # Automatically load secrets from .env
+      - WebTimViec.Api/.env # Ensure user copies .env from .env.example
     environment:
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=webtimviec;Username=postgres;Password=password
       - ASPNETCORE_ENVIRONMENT=Development
     volumes:
-      - .:/app # Optional: for hot reload in some scenarios
+      - .:/app
 
   frontend:
     build:
       context: WebTimViec.Web
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5281/api
+        - VITE_BASE_URL=http://localhost:5281
     container_name: helperhub-frontend
     ports:
-      - "5173:80" # Map 5173 to Nginx port 80
+      - "15173:80" # Avoid conflict with local dev port
     depends_on:
       - api
 
