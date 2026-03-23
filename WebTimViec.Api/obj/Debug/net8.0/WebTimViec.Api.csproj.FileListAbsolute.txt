@@ -125,3 +125,4 @@
 /mnt/sdb3/web_tim_viec/WebTimViec.Api/obj/Debug/net8.0/WebTimViec.Api.pdb
 /mnt/sdb3/web_tim_viec/WebTimViec.Api/obj/Debug/net8.0/WebTimViec.Api.genruntimeconfig.cache
 /mnt/sdb3/web_tim_viec/WebTimViec.Api/obj/Debug/net8.0/ref/WebTimViec.Api.dll
+/mnt/sdb3/web_tim_viec/WebTimViec.Api/obj/Debug/net8.0/WebTimViec.Api.sourcelink.json

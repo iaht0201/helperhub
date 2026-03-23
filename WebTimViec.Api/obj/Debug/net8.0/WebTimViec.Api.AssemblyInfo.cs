@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WebTimViec.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+30d413adddd074977fd80a817fe302e7e00fdb0d")]
 [assembly: System.Reflection.AssemblyProductAttribute("WebTimViec.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WebTimViec.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
