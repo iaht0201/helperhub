@@ -71,15 +71,16 @@ Khi test VNPay IPN (xác nhận thanh toán tự động), bạn **nên** sử d
 
 ---
 
-## 🛡 Tài khoản Demo (Admin/User)
-- **Admin**: `admin@webtimviec.com` | `Password123!`
+## 🛡 Tài khoản Demo (Admin/Roles)
+- **Quản trị viên (Admin)**: `admin@webtimviec.com` | `Password123!`
+- **Ứng viên (Candidate)**: `worker_1@example.com` | `Password123!`
+- **Nhà tuyển dụng (Employer)**: `employer_1@example.com` | `Password123!`
 - **User thường**: `user@example.com` | `Password123!`
 
 ---
 
 ## 📂 Tài liệu chi tiết
 - [Huớng dẫn Test Thanh toán chuyên sâu](README_PAYMENT_TEST.md)
-- [Cấu hình MoMo](momo_integration_guide.md)
 
 ---
 *Phát triển bởi đội ngũ HelperHub. Chúc bạn tuyển dụng thành công!*
