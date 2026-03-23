@@ -118,6 +118,27 @@ Hệ thống sẽ tự động chạy Backend, Frontend và Database ở chế �
 
 ---
 
+## 📂 Cấu trúc mã nguồn (Project Structure)
+
+### 1. Backend (WebTimViec.Api)
+Hành não của hệ thống, xử lý Logic nghiệp vụ và CSDL.
+- **Controllers/**: Chứa các Endpoint API (Auth, Jobs, Subscriptions, Webhooks...).
+- **Data/**: Gồm `AppDbContext.cs` (EF Core) và `DbSeeder.cs` (Nạp dữ liệu mẫu).
+- **Entities/**: Các Model CSDL (User, JobPost, Subscription, Notification...).
+- **Services/**: Xử lý logic nghiệp vụ chính (VNPay, Email, Google Auth).
+- **Hubs/**: Cấu hình SignalR (Real-time Notifications).
+- **Program.cs**: File khởi tạo dịch vụ & Middleware.
+
+### 2. Frontend (WebTimViec.Web)
+Giao diện người dùng hiện đại, mượt mà.
+- **src/components/**: Các thành phần UI dùng chung (Sidebar, Navbar, Modals...).
+- **src/pages/**: Các trang chính (Dashboard, Search, Employer Profile, Pricing...).
+- **src/services/**: Các hàm gọi API từ Backend (Sử dụng Axios).
+- **src/context/**: Quản lý Global State (AuthContext, NotificationContext).
+- **src/hooks/**: Các custom hooks dùng chung (useAuth, useNotifications).
+
+---
+
 ## 🛡 Tài khoản Demo (Admin/Roles)
 - **Quản trị viên (Admin)**: `admin@webtimviec.com` | `Password123!`
 - **Ứng viên (Candidate)**: `worker_1@example.com` | `Password123!`
