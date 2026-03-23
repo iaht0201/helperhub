@@ -7,7 +7,7 @@ Dự án HelperHub là một nền tảng tuyển dụng thông minh, giúp kế
 ## 🚀 Công nghệ sử dụng
 - **Backend**: ASP.NET Core 9.0, Entity Framework Core, PostgreSQL/SQLite.
 - **Frontend**: React (Vite), TypeScript, Tailwind CSS, Framer Motion.
-- **Thanh toán**: MoMo Sandbox, VNPay Sandbox, ZaloPay (Đang phát triển).
+- **Thanh toán**: VNPay (Môi trường Sandbox/Thử nghiệm).
 - **Tính năng mới**: Hệ thống thông báo tự động (Real-time Notifications) cho các hoạt động tài khoản và tuyển dụng.
 - **Khác**: Google Login, Ngrok (cho Webhook/IPN testing).
 
@@ -59,12 +59,7 @@ graph TD
 
 Để test tính năng nâng cấp gói hội viên (Pro/Pro Max), bạn sử dụng các thông tin sau:
 
-### 1. MoMo Sandbox
-- **Số điện thoại**: Bất kỳ (VD: `0911222333`)
-- **Mã OTP**: `0000`
-- **Mật khẩu ví**: `123456`
-
-### 2. VNPay Sandbox (ATM Nội địa / NCB)
+### VNPay Sandbox (ATM Nội địa / NCB)
 - **Ngân hàng**: Chọn ngân hàng **NCB**
 - **Số thẻ**: `9704198526191432198`
 - **Tên chủ thẻ**: `NGUYEN VAN A`
@@ -72,9 +67,7 @@ graph TD
 - **Mã OTP**: `123456`
 
 ### 3. Lưu ý về Ngrok (Quan trọng)
-Khi test MoMo/VNPay IPN (xác nhận thanh toán tự động), bạn **phải** dùng Ngrok và cập nhật `NotifyUrl` trong `appsettings.json`.
-- Ngrok sẽ nhận tín hiệu từ MoMo/VNPay và đẩy về máy local của bạn.
-- OTP MoMo là `0000`.
+Khi test VNPay IPN (xác nhận thanh toán tự động), bạn **nên** sử dụng Ngrok để server VNPay có thể gọi được App của bạn ở local.
 
 ---
 
