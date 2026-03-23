@@ -82,6 +82,32 @@ Khi test VNPay IPN (xác nhận thanh toán tự động), bạn **nên** sử d
 
 ---
 
+## 🚀 Hướng dẫn Triển khai Production (VPS/Server)
+
+Để triển khai HelperHub lên môi trường thực tế, bạn thực hiện các bước sau:
+
+### 1. Chuẩn bị VPS & Domain
+- Cài đặt **Docker** và **Docker Compose** lên VPS.
+- Trỏ Domain (VD: `helperhub.com`) về IP của VPS.
+
+### 2. Thiết lập Biến môi trường
+- Trên máy chủ, tạo file `.env` từ `.env.example`.
+- Thay đổi `AllowedOrigins` (Backend) và `VITE_API_URL` (Frontend) từ localhost thành Domain thực tế của bạn.
+- Cập nhật thông tin **VNPay Thật** (nếu có) thay cho Sandbox.
+
+### 3. Build & Run với Docker
+Mở terminal tại thư mục gốc của dự án trên VPS:
+```bash
+docker-compose --file docker-compose.yml up -d --build
+```
+Hệ thống sẽ tự động chạy Backend, Frontend và Database ở chế độ ngầm (detached).
+
+### 4. Cấu hình SSL (HTTPS)
+- Sử dụng **Nginx Proxy Manager** hoặc **Let's Encrypt** để cấp chứng chỉ SSL miễn phí.
+- Truy cập vào website qua `https://` để đảm bảo bảo mật và tính năng Google Login hoạt động tốt.
+
+---
+
 ## 🛡 Tài khoản Demo (Admin/Roles)
 - **Quản trị viên (Admin)**: `admin@webtimviec.com` | `Password123!`
 - **Ứng viên (Candidate)**: `worker_1@example.com` | `Password123!`
