@@ -13,6 +13,17 @@ Dự án HelperHub là một nền tảng tuyển dụng thông minh, giúp kế
 
 ---
 
+## ✨ Các tính năng chính
+- **Tìm kiếm & Ứng tuyển**: Tìm kiếm việc làm thông minh với bộ lọc đa dạng. Ứng tuyển nhanh chóng chỉ với 1 click.
+- **Quản lý Tuyển dụng**: Nhà tuyển dụng dễ dàng đăng tin, quản lý danh sách ứng viên và hồ sơ ứng tuyển.
+- **Hội viên (Subscription)**: Hệ thống các gói cước (Basic/Pro/Enterprise) giúp mở rộng hạn mức xem hồ sơ và đăng tin.
+- **Thanh toán Trực tuyến**: Tích hợp cổng thanh toán VNPay (Sandbox) để nâng cấp tài khoản tự động và an toàn.
+- **Thông báo Real-time**: Nhận thông báo tức thì (SignalR) khi có người ứng tuyển, duyệt tin hoặc xác nhận thanh toán.
+- **Hệ thống Admin**: Bảng quản trị toàn diện dành cho Admin để quản lý Người dùng, Tin tuyển dụng và Gói dịch vụ.
+- **Bảo mật & Trải nghiệm**: Đăng nhập bằng Google, xác thực Email (SMTP) và hiệu ứng giao diện mượt mà (Framer Motion).
+
+---
+
 ## 🐳 Hướng dẫn chạy nhanh bằng Docker (KHUYÊN DÙNG)
 
 > [!IMPORTANT]
