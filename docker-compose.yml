@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: webtimviec-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: webtimviec
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: WebTimViec.Api/Dockerfile
+    container_name: webtimviec-api
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5281:5281"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=webtimviec;Username=postgres;Password=password
+      - ASPNETCORE_ENVIRONMENT=Development
+      # MoMo Static Domain Configuration
+      - MomoSettings__ReturnUrl=https://joint-honest-lark.ngrok-free.app/subscription/callback
+      - MomoSettings__NotifyUrl=https://joint-honest-lark.ngrok-free.app/api/webhook/momo-ipn
+      - MomoSettings__PartnerCode=MOMOBKUN20180529
+      - MomoSettings__AccessKey=klm05688u9913w7r
+      - MomoSettings__SecretKey=esB9n6X9v6Y9v7X8v8X9C9V9C9V9F9G
+    volumes:
+      - .:/app # Optional: for hot reload in some scenarios
+
+  frontend:
+    build:
+      context: WebTimViec.Web
+      dockerfile: Dockerfile
+    container_name: webtimviec-frontend
+    ports:
+      - "5173:80" # Map 5173 to Nginx port 80
+    depends_on:
+      - api
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: webtimviec-ngrok
+    restart: always
+    environment:
+      - NGROK_AUTHTOKEN=31VkjzPhU5XFoPZ2snnde4XvIMd_2bsCFgSiUZ7Ecjn6qV6yZ
+    command:
+      - "http"
+      - "--domain=joint-honest-lark.ngrok-free.app"
+      - "frontend:80"
+    depends_on:
+      - frontend
+
+
+volumes:
+  postgres_data:
