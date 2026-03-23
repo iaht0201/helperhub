@@ -23,20 +23,14 @@ namespace WebTimViec.Api.Controllers
     public class SubscriptionController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IMomoService _momoService;
         private readonly IVnPayService _vnPayService;
-        private readonly IZaloPayService _zaloPayService;
 
         public SubscriptionController(
             AppDbContext context, 
-            IMomoService momoService, 
-            IVnPayService vnPayService,
-            IZaloPayService zaloPayService)
+            IVnPayService vnPayService)
         {
             _context = context;
-            _momoService = momoService;
             _vnPayService = vnPayService;
-            _zaloPayService = zaloPayService;
         }
 
         [HttpGet("pricing")]
@@ -95,32 +89,7 @@ namespace WebTimViec.Api.Controllers
             return Ok(new { PayUrl = payUrl, OrderId = txnRef });
         }
 
-        [HttpPost("momo-payment")]
-        public async Task<IActionResult> CreateMomoPayment([FromBody] PaymentRequest request)
-        {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userIdStr == null) return Unauthorized("Vui lòng đăng nhập để thanh toán.");
 
-            ServicePackage? package = null;
-            if (Guid.TryParse(request.PlanCode, out Guid guidId))
-                package = await _context.ServicePackages.FindAsync(guidId);
-            else
-                package = await _context.ServicePackages.FirstOrDefaultAsync(p => p.Code == request.PlanCode && p.IsActive);
-
-            if (package == null) return BadRequest("Gói dịch vụ không hợp lệ");
-
-            string orderId = Guid.NewGuid().ToString();
-            string orderInfo = $"Thanh_toan_{package.Code}"; // NO SPACES
-            string extraDataPlain = $"userId={userIdStr}&planId={package.Id}";
-            string extraData = Convert.ToBase64String(Encoding.UTF8.GetBytes(extraDataPlain));
-
-            var momoResponse = await _momoService.SendPaymentRequest(orderId, (long)package.Price, orderInfo, extraData);
-
-            if (momoResponse == null || momoResponse.ResultCode != 0)
-                return BadRequest(new { message = "Không thể khởi tạo thanh toán MoMo", details = momoResponse?.Message });
-
-            return Ok(new { PayUrl = momoResponse.PayUrl, OrderId = orderId });
-        }
 
 
         [HttpPost("activate-mock")]
@@ -170,37 +139,7 @@ namespace WebTimViec.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Gói dịch vụ đã được kích hoạt thành công (Mô phỏng MoMo)!" });
         }
-        [HttpPost("zalopay-payment")]
-        public async Task<IActionResult> CreateZaloPayPayment([FromBody] PaymentRequest request)
-        {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
 
-            var package = await _context.ServicePackages.FirstOrDefaultAsync(p => p.Code == request.PlanCode);
-            if (package == null) return BadRequest("Gói không tồn tại");
-
-            // Format: yyMMdd_Guid (ZaloPay requires app_trans_id unique per day/request)
-            string appTransId = $"{VNTime.Now:yyMMdd}_{Guid.NewGuid().ToString().Substring(0, 8)}";
-            string appUser = User.FindFirst(ClaimTypes.Email)?.Value ?? userIdStr;
-            string description = $"WebTimViec: Thanh toan goi {package.Code}";
-            
-            // Use embedData for userId, planId AND redirecturl for ZaloPay
-            var embedDataObj = new { 
-                userId = userIdStr, 
-                planId = package.Id.ToString(),
-                redirecturl = "http://localhost:5173/payment-result?status=0" // ZaloPay will redirect here
-            };
-            string embedData = JsonSerializer.Serialize(embedDataObj);
-
-            var response = await _zaloPayService.CreateOrder(appTransId, (long)package.Price, description, appUser, embedData);
-
-            if (response != null && response.ReturnCode == 1)
-            {
-                return Ok(new { paymentUrl = response.OrderUrl });
-            }
-
-            return BadRequest(new { message = response?.ReturnMessage ?? "Không thể khởi tạo thanh toán ZaloPay" });
-        }
         [HttpPost("create-order")]
         public async Task<IActionResult> CreateOrder([FromBody] PaymentRequest request)
         {

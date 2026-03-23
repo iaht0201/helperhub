@@ -1,43 +1,61 @@
-# Hướng Dẫn Test Thanh Toán MoMo (Môi trường Sandbox)
+# Hướng Dẫn Test Thanh Toán (Sandbox Environment) - PROJOB
 
-Tài liệu này cung cấp thông tin cần thiết để kiểm tra tính năng thanh toán MoMo trên website **WebTimViec**.
+Tài liệu này cung cấp thông tin cần thiết để kiểm tra tính năng thanh toán MoMo và VNPay trên website **PROJOB**.
 
-## 1. Thông tin tài khoản Test MoMo
-Bạn có thể sử dụng bất kỳ số điện thoại nào (10 chữ số) để thực hiện thanh toán trên môi trường Sandbox của MoMo.
+---
 
-- **Số điện thoại**: Tùy chọn (Ví dụ: `0901234567`, `0333444555`...)
-- **Mã OTP**: `0000` hoặc `000000`
-- **Mật khẩu ví**: `123456` (Nếu yêu cầu tạo)
+## 1. MoMo Sandbox (Ví MoMo)
 
-## 2. Các bước thực hiện Test
+Môi trường giả lập của MoMo cho phép bạn test mà không mất phí thật.
 
-### Cách 1: Test trên trình duyệt (Web Payment)
-1. Truy cập trang **Nâng cấp gói** trên website.
-2. Chọn gói Pro hoặc Pro Max.
-3. Chọn phương thức thanh toán **Ví MoMo**.
-4. Hệ thống sẽ chuyển hướng sang trang thanh toán của MoMo Sandbox.
-5. Nhập số điện thoại bất kỳ và mã OTP `0000` để hoàn tất.
+- **Số điện thoại**: Sử dụng bất kỳ số điện thoại nào (10-11 chữ số).
+- **Mã OTP**: `0000` (4 số) hoặc `000000` (6 số).
+- **Mật khẩu ví**: `123456` (Nếu yêu cầu tạo).
 
-### Cách 2: Test bằng App MoMo (Mobile)
-Nếu bạn muốn trải nghiệm quét mã QR:
-1. Gỡ cài đặt ứng dụng MoMo thật trên điện thoại.
-2. Tải và cài đặt **Ứng dụng MoMo Test**:
-   - Android: [Tải tại đây](https://developers.momo.vn/v3/vi/download/)
-   - iOS: Cần qua TestFlight (Xem link trên).
-3. Sử dụng app Test để quét mã QR hiển thị trên website.
+### Các bước thực hiện:
+1. Đăng nhập vào website PROJOB.
+2. Truy cập trang **Nâng cấp gói**.
+3. Chọn gói Pro hoặc Pro Max.
+4. Chọn phương thức thanh toán **Ví MoMo**.
+5. Hệ thống sẽ chuyển hướng sang MoMo. Nhập số điện thoại và OTP `0000`.
+
+---
+
+## 2. VNPay Sandbox (ATM Nội địa / NCB)
+
+VNPay cung cấp thẻ ATM giả lập để test thanh toán qua cổng ngân hàng.
+
+- **Ngân hàng**: Chọn ngân hàng **NCB** (Ngân hàng Quốc dân).
+- **Số thẻ**: `9704198526191432198`
+- **Tên chủ thẻ**: `NGUYEN VAN A`
+- **Ngày phát hành**: `07/15` (Tháng 7, năm 2015).
+- **Mã OTP**: `123456`.
+
+### Các bước thực hiện:
+1. Tại trang nâng cấp, chọn phương thức **Thanh toán VNPay**.
+2. Tại giao diện VNPay, chọn **ATM Nội địa**.
+3. Chọn ngân hàng **NCB**.
+4. Nhập thông tin thẻ trên và bấm thanh toán. Nhập OTP `123456`.
+
+---
 
 ## 3. Các kịch bản Test (Scenario)
 
 | Kịch bản | Hành động | Kết quả mong đợi |
 | :--- | :--- | :--- |
-| **Thanh toán thành công** | Nhập OTP `0000` | Redirect về trang Success, Gói được nâng cấp, Thông báo thành công. |
-| **Hủy thanh toán** | Nhấn "Hủy" hoặc quay lại từ trang MoMo | Redirect về trang Subscription, Thông báo đã hủy giao dịch. |
-| **Hết hạn giao dịch** | Đợi 10 phút không thanh toán | Giao dịch thất bại trên hệ thống. |
-
-## 4. Lưu ý quan trọng
-- Đây là môi trường **Sandbox**, không trừ tiền thật trong tài khoản của bạn.
-- Mọi giao dịch test sẽ bắt đầu bằng mã `WebTimViec_...`.
-- Nếu gặp lỗi "Giao dịch không tồn tại", hãy kiểm tra lại cấu hình `MomoConfig` trong file `appsettings.json` của Backend.
+| **Thanh toán thành công** | Nhập đúng OTP | Redirect về trang Success, Gói được nâng cấp ngay lập tức, Thông báo thành công hiển thị. |
+| **Hủy thanh toán** | Nhấn "Hủy" hoặc quay lại từ trang thanh toán | Redirect về trang Subscription, Thông báo đã hủy giao dịch. |
+| **Hết hạn giao dịch** | Đợi hế gian thanh toán | Giao dịch thất bại, trạng thái đơn hàng là Canceled. |
 
 ---
-*Tham khảo thêm tại: [MoMo Developers Test Instructions](https://developers.momo.vn/v3/vi/docs/payment/onboarding/test-instructions/)*
+
+## 4. Lưu ý quan trọng cho Developer
+
+Để hệ thống PROJOB tự động nâng cấp gói sau khi thanh toán thành công (xử lý IPN/Webhook):
+
+- **Ngrok Tunnel**: Bạn **bắt buộc** phải chạy Ngrok để MoMo/VNPay có thể gọi được vào cổng API của bạn từ internet.
+- **Cấu hình**: Cập nhật link Ngrok vào `MomoSettings:NotifyUrl` và `VnPaySettings:ReturnUrl` trong file `appsettings.json`.
+- **Log**: Kiểm tra terminal của API để xem log các request IPN trả về.
+
+---
+*Tham khảo thêm tại: [MoMo Developers](https://developers.momo.vn/) và [VNPay Sandbox](https://sandbox.vnpayment.vn/apis/)*

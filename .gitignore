@@ -1,0 +1,28 @@
+# .gitignore
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build/Binaries
+bin/
+obj/
+publish/
+dist/
+node_modules/
+
+# Environment Variables (IMPORTANT: Protect secrets!)
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

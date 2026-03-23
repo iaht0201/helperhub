@@ -68,10 +68,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IMomoService, MomoService>();
 builder.Services.AddScoped<IVnPayService, VnPayService>();
-builder.Services.AddScoped<IZaloPayService, ZaloPayService>();
-builder.Services.Configure<SePaySettings>(builder.Configuration.GetSection("SePaySettings"));
 
 // CORS
 builder.Services.AddCors(options =>

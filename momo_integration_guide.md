@@ -1,58 +1,50 @@
-# Tài liệu Tích hợp Thanh toán MoMo (Demo) - WebTimViec
+# Tài liệu Tích hợp Thanh toán MoMo (Sandbox) - PROJOB
 
-Tài liệu này hướng dẫn cách sử dụng và kiểm tra tính năng thanh toán MoMo đã tích hợp trong dự án WebTimViec.
+Tài liệu này hướng dẫn cách sử dụng và cấu hình tính năng thanh toán MoMo đã tích hợp trong hệ thống PROJOB.
 
 ## 1. Quy trình thanh toán (Payment Flow)
 
-### Bước 1: Yêu cầu thanh toán (Initiate Payment)
-- Người dùng chọn gói cước trên Frontend.
-- Frontend gọi API `POST /api/subscription/momo-payment` cùng với `planId`.
-- Backend nhận yêu cầu, tạo `OrderId`, tính toán `Signature` (chữ ký bảo mật HMAC-SHA256) và gửi request đến cổng MoMo Sandbox.
-- MoMo trả về `payUrl`.
+1. **Yêu cầu thanh toán**: Người dùng chọn gói (Pro/Pro Max) -> Backend tạo `payUrl` (MoMo Sandbox) kèm theo chữ ký bảo mật HMAC-SHA256.
+2. **Thanh toán tại Sandbox**: Người dùng nhập SĐT bất kỳ và OTP `0000` trên trang MoMo.
+3. **Xử lý kết quả**: 
+   - MoMo chuyển hướng người dùng về `ReturnUrl` (Trang kết quả trên Frontend).
+   - MoMo gửi dữ liệu IPN (Instant Payment Notification) về `NotifyUrl` (API Webhook của Backend).
+   - Backend xác thực chữ ký IPN và tự động nâng cấp gói hội viên cho người dùng.
 
-### Bước 2: Thanh toán (Payment)
-- Frontend chuyển hướng người dùng đến `payUrl`.
-- Người dùng thực hiện thanh toán trên trang của MoMo (Sử dụng ví Test hoặc quét mã).
+## 2. Thông tin cấu hình (Môi trường Test)
 
-### Bước 3: Hoàn tất (Callback)
-- MoMo chuyển hướng người dùng về `RedirectUrl` (đã cấu hình là trang Dashboard).
-- MoMo đồng thời gửi một yêu cầu ngầm (IPN - Instant Payment Notification) đến `IpnUrl` của Backend.
-- Backend xác thực chữ ký IPN, nếu hợp lệ sẽ cộng ngày sử dụng hoặc kích hoạt tính năng Premium cho người dùng.
-
-## 2. Thông tin môi trường thử nghiệm (Momo Sandbox)
-
-Dự án đang sử dụng thông tin **tài khoản thử nghiệm** (Test/Sandbox) mặc định của MoMo. Bạn không cần thẻ thật để thanh toán.
+Hiện tại dự án sử dụng tài khoản Sandbox mặc định:
 
 - **Partner Code:** `MOMOBKUN20180529`
-- **Access Key:** `klm05688u9913w7r`
-- **Secret Key:** `esB9n6X9v6Y9v7X8v8X9C9V9C9V9F9G`
+- **Access Key:** `klm0568887013354`
+- **Secret Key:** `esB0WpW9S98m4iYS8855F8W03T49qIsx`
 - **Endpoint:** `https://test-payment.momo.vn/v2/gateway/api/create`
 
-### Cách test thanh toán tại chỗ (Local Testing):
-Vì Localhost (`127.0.0.1`) không thể nhận được dữ liệu từ Internet (MoMo), bạn có thể giả lập bước cuối cùng bằng cách sử dụng nút **"Xác nhận thanh toán (Demo)"** trên giao diện Web khi đang ở trang thanh toán để Backend kích hoạt gói cước ngay lập tức mà không cần chờ MoMo gọi về.
-
-## 3. Cấu hình hệ thống (appsettings.json)
-
-Bạn có thể thay đổi thông tin MoMo trong file `/WebTimViec.Api/appsettings.json`:
-
+### Cấu hình trong `appsettings.json`:
 ```json
-"Momo": {
+"MomoSettings": {
   "PartnerCode": "MOMOBKUN20180529",
-  "AccessKey": "klm05688u9913w7r",
-  "SecretKey": "esB9n6X9v6Y9v7X8v8X9C9V9C9V9F9G",
-  "Endpoint": "https://test-payment.momo.vn/v2/gateway/api/create",
-  "RedirectUrl": "http://localhost:5173/dashboard",
-  "IpnUrl": "http://localhost:5281/api/webhook/momo-ipn"
+  "PartnerName": "PROJOB",
+  "StoreId": "MomoStore",
+  "AccessKey": "klm0568887013354",
+  "SecretKey": "esB0WpW9S98m4iYS8855F8W03T49qIsx",
+  "Endpoints": {
+      "Create": "https://test-payment.momo.vn/v2/gateway/api/create"
+  },
+  "ReturnUrl": "[NGROK_DOMAIN]/subscription/callback",
+  "NotifyUrl": "[NGROK_DOMAIN]/api/webhook/momo-ipn"
 }
 ```
 
-## 4. Các File quan trọng trong Backend
+## 3. Lưu ý quan trọng cho Local Development
 
-- `Services/MomoService.cs`: Chứa logic tạo chữ ký (Signature) và gọi API MoMo.
-- `Controllers/SubscriptionController.cs`: Cổng nhận yêu cầu từ Web.
-- `Controllers/WebhookController.cs`: Xử lý dữ liệu trả về từ MoMo để cộng tiền/gói cước.
+Do MoMo Sandbox cần gửi dữ liệu về máy cá nhân của bạn thông qua internet, bạn cần:
+1. **Sử dụng Ngrok** để tạo một đường hầm (tunnel) cho cổng 5173 (nếu dùng Docker) hoặc 5281 (nếu chạy thủ công).
+2. Cập nhật `ReturnUrl` và `NotifyUrl` trong `appsettings.json` trùng với domain Ngrok được cấp.
 
-## 5. Tài liệu chính thức từ MoMo
+## 4. Các File mã nguồn chính
+- `WebTimViec.Api/Services/MomoService.cs`: Xử lý tạo Signature và gọi API.
+- `WebTimViec.Api/Controllers/WebhookController.cs`: Tiếp nhận IPN và xử lý kết quả thanh toán.
 
-- [Cổng phát triển MoMo (MoMo Developers)](https://developers.momo.vn/)
-- [Tài liệu API All-In-One](https://developers.momo.vn/v2/vi/docs/servicer/all-in-one/)
+---
+*Phát triển bởi đội ngũ PROJOB.*
