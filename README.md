@@ -58,7 +58,16 @@ graph TD
 
 ### 2. Thiết lập Backend (WebTimViec.Api)
 1. `cd WebTimViec.Api`
-2. `dotnet run` (Chạy tại `http://localhost:5281`)
+2. Tạo file `.env` từ `.env.example` và điền đủ thông tin.
+3. Chạy API: `dotnet run` (Chạy tại `http://localhost:5281`)
+4. **Mở cổng thanh toán (Ngrok)**:
+   ```bash
+   # Cấu hình token (nếu lần đầu)
+   ngrok config add-authtoken 31VkjzPhU5XFoPZ2snnde4XvIMd_2bsCFgSiUZ7Ecjn6qV6yZ 
+   
+   # Chạy tunnel với domain tĩnh
+   ngrok http --url=joint-honest-lark.ngrok-free.app 5281
+   ```
 
 ### 3. Thiết lập Frontend (WebTimViec.Web)
 1. `cd WebTimViec.Web`
