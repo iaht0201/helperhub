@@ -55,11 +55,12 @@ graph TD
 ### 1. Yêu cầu hệ thống
 - [.NET SDK 9.0](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [Node.js (LTS)](https://nodejs.org/en)
+- [PostgreSQL 15+](https://www.postgresql.org/download/) (Chạy tại port 5433 hoặc cấu hình lại trong `.env`)
 
 ### 2. Thiết lập Backend (WebTimViec.Api)
 1. `cd WebTimViec.Api`
-2. Tạo file `.env` từ `.env.example` và điền đủ thông tin.
-3. Chạy API: `dotnet run` (Chạy tại `http://localhost:5281`)
+2. Tạo file `.env` từ `.env.example` và điền đủ thông tin CSDL.
+3. Chạy API: `dotnet run` (Hệ thống sẽ **tự động** tạo bảng và nạp dữ liệu demo khi khởi chạy lần đầu).
 4. **Mở cổng thanh toán (Ngrok)**:
    ```bash
    # Cấu hình token (nếu lần đầu)
