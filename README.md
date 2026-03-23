@@ -57,7 +57,23 @@ graph TD
 - [Node.js (LTS)](https://nodejs.org/en)
 - [PostgreSQL 15+](https://www.postgresql.org/download/) (Chạy tại port 5433 hoặc cấu hình lại trong `.env`)
 
-### 2. Thiết lập Backend (WebTimViec.Api)
+### 2. Thiết lập CSDL & Dữ liệu mẫu (Database)
+HelperHub hỗ trợ **2 cách** để bạn có dữ liệu test ngay lập tức:
+
+- **Cách 1: Tự động (Khuyên dùng)**
+  Khi bạn chạy `dotnet run` ở Backend lần đầu, hệ thống sẽ tự động thực hiện Migrations (tạo bảng) và Seeding (nạp 100 tin tuyển dụng, 50 ứng viên và các tài khoản demo).
+  
+- **Cách 2: Sử dụng file SQL Backup**
+  Nếu bạn muốn có một "bản chụp" CSDL chuẩn nhất, hãy sử dụng file **`helperhub_db_backup.sql`** đi kèm:
+  ```bash
+  # Tạo database mới (nếu chưa có)
+  psql -U postgres -c "CREATE DATABASE webtimviec;"
+  
+  # Restore từ file backup
+  psql -U postgres -d webtimviec < helperhub_db_backup.sql
+  ```
+
+### 3. Thiết lập Backend (WebTimViec.Api)
 1. `cd WebTimViec.Api`
 2. Tạo file `.env` từ `.env.example` và điền đủ thông tin CSDL.
 3. Chạy API: `dotnet run` (Hệ thống sẽ **tự động** tạo bảng và nạp dữ liệu demo khi khởi chạy lần đầu).
@@ -89,32 +105,6 @@ graph TD
 
 ### 3. Lưu ý về Ngrok (Quan trọng)
 Khi test VNPay IPN (xác nhận thanh toán tự động), bạn **nên** sử dụng Ngrok để server VNPay có thể gọi được App của bạn ở local.
-
----
-
-## 🚀 Hướng dẫn Triển khai Production (VPS/Server)
-
-Để triển khai HelperHub lên môi trường thực tế, bạn thực hiện các bước sau:
-
-### 1. Chuẩn bị VPS & Domain
-- Cài đặt **Docker** và **Docker Compose** lên VPS.
-- Trỏ Domain (VD: `helperhub.com`) về IP của VPS.
-
-### 2. Thiết lập Biến môi trường
-- Trên máy chủ, tạo file `.env` từ `.env.example`.
-- Thay đổi `AllowedOrigins` (Backend) và `VITE_API_URL` (Frontend) từ localhost thành Domain thực tế của bạn.
-- Cập nhật thông tin **VNPay Thật** (nếu có) thay cho Sandbox.
-
-### 3. Build & Run với Docker
-Mở terminal tại thư mục gốc của dự án trên VPS:
-```bash
-docker-compose --file docker-compose.yml up -d --build
-```
-Hệ thống sẽ tự động chạy Backend, Frontend và Database ở chế độ ngầm (detached).
-
-### 4. Cấu hình SSL (HTTPS)
-- Sử dụng **Nginx Proxy Manager** hoặc **Let's Encrypt** để cấp chứng chỉ SSL miễn phí.
-- Truy cập vào website qua `https://` để đảm bảo bảo mật và tính năng Google Login hoạt động tốt.
 
 ---
 
