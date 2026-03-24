@@ -44,7 +44,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUser = async () => {
     try {
       const response = await authApi.getMe();
-      setUser(response.data);
+      const userData = response.data;
+      
+      // Admin bypass: always Enterprise and Unlimited
+      if (userData.role === 'Admin') {
+        userData.subscriptionTier = 'ENTERPRISE';
+        userData.isSubscribed = true;
+        userData.maxViews = -1;
+        userData.maxApplications = -1;
+        userData.subscriptionExpiredAt = '2099-12-31'; // Far future
+      }
+      
+      setUser(userData);
     } catch (error) {
       console.error('Failed to fetch user', error);
       logout();

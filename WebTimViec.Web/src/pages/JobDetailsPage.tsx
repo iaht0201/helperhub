@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-    MapPin, Clock, Briefcase, Calendar, 
+    Clock, Briefcase, Calendar, 
     ArrowLeft, Send, MessageCircle, ShieldCheck, 
-    Share2, CheckCircle2, 
-    Users, Star, Phone, Award
+    Share2, CheckCircle2, XCircle, Mail,
+    Users, Star, Phone, Award, MapPin, Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jobApi, applicationApi } from '../api';
@@ -19,6 +19,8 @@ const JobDetailsPage: React.FC = () => {
     const [showApplyModal, setShowApplyModal] = useState(false);
     const [isApplied, setIsApplied] = useState(false);
     const [hasViewedInfo, setHasViewedInfo] = useState(false);
+    const [applications, setApplications] = useState<any[]>([]);
+    const [selectedApplicant, setSelectedApplicant] = useState<any | null>(null);
     const navigate = useNavigate();
     const { user, refreshUser } = useAuth();
 
@@ -35,8 +37,27 @@ const JobDetailsPage: React.FC = () => {
                 }
 
                 if (user) {
-                    const appsRes = await applicationApi.getMyApplications();
-                    const applied = appsRes.data.some((a: any) => a.jobPostId === id);
+                    const isOwner = user.id === response.data.userId;
+                    const isAdmin = user.role === 'Admin';
+                    const isEnterprise = user.subscriptionTier === 'ENTERPRISE';
+
+                    // Auto-unlock info for owner, admin, or enterprise
+                    if (isOwner || isAdmin || isEnterprise) {
+                        setHasViewedInfo(true);
+                    }
+
+                    // Fetch applications if owner
+                    if (isOwner || isAdmin) {
+                        try {
+                            const appsRes = await applicationApi.getJobApplications(id!);
+                            setApplications(appsRes.data);
+                        } catch (err) {
+                            console.error("Failed to fetch applications for this job", err);
+                        }
+                    }
+
+                    const myAppsRes = await applicationApi.getMyApplications();
+                    const applied = myAppsRes.data.some((a: any) => a.jobPostId === id);
                     setIsApplied(applied);
                 }
 
@@ -142,18 +163,56 @@ const JobDetailsPage: React.FC = () => {
     };
 
     const handleChat = () => {
-        if (!hasViewedInfo) {
-            toast('Vui lòng mở khóa thông tin liên hệ để dùng tính năng Chat Zalo.', { icon: '🗨️' });
-            handleViewInfo();
-            return;
-        }
-        
         const phone = job?.user?.phone;
+        handleChatWithPhone(phone);
+    };
+
+    const handleChatWithPhone = (phone: string) => {
         if (phone && !phone.includes('•')) {
             const cleanPhone = phone.replace(/\D/g, '');
             window.open(`https://zalo.me/${cleanPhone}`, '_blank');
         } else {
-            toast.error('Không tìm thấy số điện thoại hợp lệ.');
+            toast.error('Vui lòng mở khóa thông tin liên hệ để dùng tính năng Chat Zalo.');
+        }
+    };
+
+    const handleUpdateAppStatus = async (appId: string, status: string) => {
+        try {
+            await applicationApi.updateStatus(appId, status);
+            setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a));
+            toast.success(status === 'Accepted' ? 'Đã chấp nhận ứng viên' : 'Đã từ chối ứng viên');
+        } catch (error) {
+            toast.error('Cập nhật thất bại');
+        }
+    };
+
+    const handleViewApplicant = async (applicant: any) => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        setSelectedApplicant(applicant);
+    };
+
+    const handleUnlockApplicant = async (applicantId: string) => {
+        try {
+            await applicationApi.viewApplicant(applicantId);
+            toast.success('Đã mở khóa thông tin ứng viên!');
+            
+            // Refetch applications to get unmasked data
+            const appsRes = await applicationApi.getJobApplications(id!);
+            const updatedApp = appsRes.data.find((a: any) => a.applicantId === applicantId);
+            if (updatedApp) {
+                setSelectedApplicant(updatedApp.applicant);
+            }
+            setApplications(appsRes.data);
+            refreshUser();
+        } catch (error: any) {
+            const errorMsg = error.response?.data || 'Hết lượt xem hoặc có lỗi xảy ra.';
+            toast.error(errorMsg);
+            if (error.response?.status === 400) {
+                navigate('/subscription');
+            }
         }
     };
 
@@ -250,19 +309,39 @@ const JobDetailsPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2 w-full md:w-auto">
-                                     <div className="bg-white/10 p-4 rounded-xl border border-white/10 backdrop-blur-md">
-                                        <div className="flex items-center justify-between gap-4">
-                                            <div className="flex items-center space-x-2">
-                                                <div className="p-1.5 bg-white/10 rounded-lg text-orange-500"><Phone size={14} /></div>
-                                                <div className="text-xs font-semibold tracking-widest">
+                                <div className="space-y-2 w-full md:w-auto relative">
+                                     {!hasViewedInfo && (
+                                         <div className="absolute -top-10 left-0 right-0 text-center">
+                                             <p className="text-[8px] font-bold text-orange-500 uppercase tracking-[0.2em] animate-pulse">
+                                                 SỐ LƯỢT XEM CÒN LẠI: {user?.maxViews === -1 ? '∞' : `${Math.max(0, (user?.maxViews || 0) - (user?.consumedViews || 0))}/${user?.maxViews || 0}`}
+                                             </p>
+                                         </div>
+                                     )}
+                                     <div 
+                                        onClick={handleViewInfo}
+                                        className={`p-4 rounded-xl border backdrop-blur-md transition-all cursor-pointer group/lock relative ${
+                                            hasViewedInfo 
+                                                ? 'bg-white/10 border-white/10' 
+                                                : 'bg-white/5 border-orange-600/30 hover:bg-white/10'
+                                        }`}
+                                     >
+                                        <div className={`flex items-center justify-between gap-4 transition-all duration-500 ${!hasViewedInfo ? 'blur-[5px] select-none scale-[0.98]' : 'blur-0 scale-100'}`}>
+                                            <div className="flex items-center space-x-4">
+                                                <div className="p-2.5 bg-white/10 rounded-xl text-orange-500 shadow-inner"><Phone size={16} /></div>
+                                                <div className="text-sm font-bold tracking-widest">
                                                     {job.user?.phone || '•••• ••• •••'}
                                                 </div>
                                             </div>
-                                            {!hasViewedInfo && (
-                                                <Link to="/subscription" className="text-[7px] font-semibold text-orange-500 uppercase tracking-widest hover:underline">Mở khóa SĐT</Link>
-                                            )}
                                         </div>
+
+                                        {!hasViewedInfo && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/40 rounded-xl group-hover/lock:bg-zinc-900/20 transition-all border border-dashed border-orange-600/20">
+                                                <div className="flex flex-col items-center gap-1.5 translate-y-0 text-center">
+                                                    <Lock size={20} className="text-orange-500 mb-0.5" />
+                                                    <span className="text-[10px] font-bold text-white uppercase tracking-[0.1em] drop-shadow-md">NHẤN ĐỂ MỞ KHÓA</span>
+                                                </div>
+                                            </div>
+                                        )}
                                      </div>
                                      <div className="flex items-center gap-2 px-4 py-2 bg-orange-600/20 rounded-lg border border-orange-600/30 w-full md:w-fit">
                                         <Phone size={12} className="text-orange-500" />
@@ -296,18 +375,12 @@ const JobDetailsPage: React.FC = () => {
                     {/* SIDEBAR - Scaled Down */}
                     <aside className="lg:col-span-4 space-y-6">
                         <div className="flex flex-col gap-3 mb-4">
-                            {!hasViewedInfo && user?.role !== 'Admin' && (
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">
-                                    Số lượt xem còn lại: {user?.maxViews === -1 ? '∞' : `${Math.max(0, (user?.maxViews || 0) - (user?.consumedViews || 0))}/${user?.maxViews}`}
-                                </p>
-                            )}
-                            {user?.role !== 'Admin' && (
+                            {user?.role !== 'Admin' && user?.id !== job.userId && !hasViewedInfo && (
                                 <button 
                                     onClick={handleViewInfo}
-                                    className={`w-full py-4 rounded-2xl font-semibold uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-2 border-2 border-orange-600 text-orange-600 hover:bg-orange-50 active:scale-95 ${hasViewedInfo ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    disabled={hasViewedInfo}
+                                    className="w-full py-4 rounded-2xl font-semibold uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-2 bg-orange-600 text-white shadow-xl shadow-orange-100/20 hover:bg-zinc-900 active:scale-95"
                                 >
-                                    <Phone size={18} /> <span>{hasViewedInfo ? 'Đã xem thông tin' : 'Xem thông tin liên hệ'}</span>
+                                    <Lock size={18} /> <span>Mở khóa toàn bộ thông tin</span>
                                 </button>
                             )}
 
@@ -374,8 +447,187 @@ const JobDetailsPage: React.FC = () => {
                             </div>
                         </section>
                     </aside>
+
+                    {/* Applicants List Section - Visible to Owner/Admin */}
+                    {user && (user.id === job.userId || user.role === 'Admin') && (
+                        <div className="lg:col-span-12 mt-12 space-y-8">
+                            <div className="flex items-center gap-4">
+                                <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent to-slate-200"></div>
+                                <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-orange-600 flex items-center gap-2">
+                                     <Users size={16} /> Danh sách ứng viên ({applications.length})
+                                </h3>
+                                <div className="h-0.5 flex-1 bg-gradient-to-l from-transparent to-slate-200"></div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {applications.length === 0 ? (
+                                    <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center">
+                                        <Users size={48} className="text-slate-100 mb-4" />
+                                        <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">Chưa có ứng viên nào ứng tuyển</p>
+                                    </div>
+                                ) : (
+                                    applications.map(app => (
+                                        <motion.div 
+                                            key={app.id}
+                                            whileHover={{ y: -5 }}
+                                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group"
+                                        >
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-xl font-bold text-slate-300 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-sm">
+                                                    {app.applicant?.fullName?.charAt(0) || '?'}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <h4 className="text-sm font-bold text-zinc-900 truncate uppercase tracking-tight">{app.applicant?.fullName}</h4>
+                                                    <span className={`text-[8px] font-black uppercase tracking-widest ${
+                                                        app.status === 'Accepted' ? 'text-emerald-500' : 
+                                                        app.status === 'Rejected' ? 'text-red-400' : 'text-orange-500'
+                                                    }`}>
+                                                        {app.status === 'Pending' ? 'Đang chờ duyệt' : 
+                                                         app.status === 'Accepted' ? 'Phù hợp' : 'Không phù hợp'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-4 rounded-2xl space-y-2 mb-6 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                                                 <div className="flex items-center gap-2">
+                                                    <Phone size={12} className="text-orange-500" />
+                                                    <span>{app.applicant?.phone || '•••• ••• •••'}</span>
+                                                 </div>
+                                                 <div className="flex items-center gap-2">
+                                                    <MapPin size={12} className="text-slate-400" />
+                                                    <span className="truncate">{app.applicant?.address || 'Khu vực khác'}</span>
+                                                 </div>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => handleViewApplicant(app.applicant)}
+                                                    className="flex-1 py-3.5 bg-zinc-950 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg shadow-zinc-950/20 active:scale-95"
+                                                >
+                                                    Xem hồ sơ
+                                                </button>
+                                                {app.status === 'Pending' && (
+                                                    <div className="flex gap-2">
+                                                        <button 
+                                                            onClick={() => handleUpdateAppStatus(app.id, 'Accepted')}
+                                                            className="w-11 h-11 bg-emerald-500 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/10"
+                                                        >
+                                                            <CheckCircle2 size={16} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleUpdateAppStatus(app.id, 'Rejected')}
+                                                            className="w-11 h-11 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm border border-red-50"
+                                                        >
+                                                            <XCircle size={16} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
+
+            {/* APPLICANT PROFILE MODAL */}
+            <AnimatePresence>
+                {selectedApplicant && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-md">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                            className="bg-white rounded-[3rem] p-8 md:p-12 max-w-lg w-full relative shadow-2xl overflow-hidden"
+                        >
+                            <button 
+                                onClick={() => setSelectedApplicant(null)}
+                                className="absolute top-6 right-6 p-2 text-slate-400 hover:text-zinc-950 transition-colors"
+                            >
+                                <XCircle size={24} />
+                            </button>
+
+                            <div className="flex flex-col items-center text-center mb-10">
+                                <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-[2.5rem] flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-orange-600/20 mb-6">
+                                    {selectedApplicant.fullName.charAt(0)}
+                                </div>
+                                <h3 className="text-2xl font-semibold text-zinc-900 uppercase tracking-tight mb-1">{selectedApplicant.fullName}</h3>
+                                <p className="text-[10px] font-bold text-orange-600 uppercase tracking-[0.2em]">{selectedApplicant.age || '??'} Tuổi • {selectedApplicant.gender || 'Chưa cập nhật'}</p>
+                            </div>
+
+                            <div className="space-y-8">
+                                <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-orange-600 shadow-sm"><Phone size={14}/></div>
+                                        <span className="text-xs font-bold tracking-widest text-zinc-900">
+                                            {selectedApplicant.phone || 'Chưa cập nhật'}
+                                        </span>
+                                     </div>
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-slate-400 shadow-sm"><Mail size={14}/></div>
+                                        <span className="text-xs font-bold tracking-tight text-slate-600">
+                                            {selectedApplicant.email || 'Chưa cập nhật'}
+                                        </span>
+                                     </div>
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-slate-400 shadow-sm"><MapPin size={14}/></div>
+                                        <span className="text-xs font-bold tracking-tight text-slate-600 truncate">{selectedApplicant.address || 'Chưa cập nhật'}</span>
+                                     </div>
+                                </div>
+                                
+                                {user && (selectedApplicant.phone?.includes('•') || selectedApplicant.email?.includes('•')) && (
+                                    <div className="space-y-4">
+                                        <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 animate-pulse">
+                                            <p className="text-[9px] font-bold text-orange-600 uppercase tracking-widest text-center mb-3">
+                                                Lượt xem còn lại: {user?.maxViews === -1 ? '∞' : `${Math.max(0, (user?.maxViews || 0) - (user?.consumedViews || 0))}/${user?.maxViews || 0}`}
+                                            </p>
+                                            <button 
+                                                onClick={() => handleUnlockApplicant(selectedApplicant.id)}
+                                                className="w-full py-4 bg-orange-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-lg shadow-orange-600/20 hover:bg-zinc-900 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <ShieldCheck size={16} /> <span>Mở khóa thông tin liên hệ</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <h4 className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-4 px-2">Kỹ năng & Kinh nghiệm</h4>
+                                    <div className="flex flex-wrap gap-2 px-2">
+                                        {(selectedApplicant.skills || "Chưa cập nhật").split(',').map((s: string) => (
+                                            <span key={s} className="px-4 py-2 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl text-[9px] font-bold uppercase tracking-widest">
+                                                {s.trim()}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <p className="mt-4 px-2 text-xs text-slate-600 leading-relaxed font-medium">
+                                        {selectedApplicant.experience || "Ứng viên chưa cập nhật mô tả kinh nghiệm chi tiết."}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-3 mt-10">
+                                {selectedApplicant.phone && !selectedApplicant.phone.includes('•') && (
+                                    <button 
+                                        onClick={() => handleChatWithPhone(selectedApplicant.phone)}
+                                        className="flex-1 py-5 bg-[#0068ff] text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#0052cc] transition-all shadow-xl flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle size={18} /> <span>Chat Zalo</span>
+                                    </button>
+                                )}
+                                <button 
+                                    onClick={() => setSelectedApplicant(null)}
+                                    className={`${selectedApplicant.phone && !selectedApplicant.phone.includes('•') ? 'flex-1' : 'w-full'} py-5 bg-zinc-950 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-orange-600 transition-all shadow-xl active:scale-95`}
+                                >
+                                    Đóng hồ sơ
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* SUCCESS MODAL - REFINED UX */}
             <AnimatePresence>

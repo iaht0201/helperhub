@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, User, Star, ArrowLeftRight, Crown } from 'lucide-react';
+import { LayoutDashboard, User, Star, ArrowLeftRight, Crown, Gem } from 'lucide-react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -66,17 +66,23 @@ const DashboardLayout: React.FC = () => {
                         <div className="flex items-center gap-4 mb-8">
                             <div className="relative">
                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold shadow-lg shrink-0 ${
+                                    user?.subscriptionTier === 'ENTERPRISE' ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-orange-600/30 ring-2 ring-orange-500/20' :
                                     user?.subscriptionTier?.includes('PROMAX') ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-amber-600/20' :
                                     user?.subscriptionTier?.includes('PRO') ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-600/20' :
                                     'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-orange-600/20'
                                 }`}>
                                     {user?.fullName.charAt(0) || 'U'}
                                 </div>
-                                {user?.isSubscribed && (
+                                {user?.isSubscribed && user.subscriptionTier !== 'BASIC' && user.subscriptionTier !== 'FREE' && (
                                     <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm ${
+                                        user.subscriptionTier === 'ENTERPRISE' ? 'bg-orange-600' :
                                         user.subscriptionTier?.includes('PROMAX') ? 'bg-amber-500' : 'bg-blue-500'
                                     }`}>
-                                        <Crown size={10} className="text-white fill-white" />
+                                        {user.subscriptionTier === 'ENTERPRISE' ? (
+                                            <Gem size={10} className="text-white fill-white" />
+                                        ) : (
+                                            <Crown size={10} className="text-white fill-white" />
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -90,6 +96,7 @@ const DashboardLayout: React.FC = () => {
                                     )}
                                 </div>
                                 <p className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${
+                                    user?.subscriptionTier === 'ENTERPRISE' ? 'text-orange-600' :
                                     user?.subscriptionTier?.includes('PROMAX') ? 'text-amber-600' :
                                     user?.subscriptionTier?.includes('PRO') ? 'text-blue-600' :
                                     'text-orange-600'
@@ -98,8 +105,16 @@ const DashboardLayout: React.FC = () => {
                                 </p>
                                 {user?.isSubscribed && (
                                     <div className="flex flex-col mt-1">
-                                         <span className={`text-[8px] font-black uppercase ${user.subscriptionTier?.includes('PROMAX') ? 'text-amber-500' : 'text-blue-500'}`}>
-                                             {user.subscriptionTier?.includes('PROMAX') ? 'Thành viên PRO MAX' : 'Thành viên PRO'}
+                                         <span className={`text-[8px] font-black uppercase ${
+                                             user.subscriptionTier === 'ENTERPRISE' ? 'text-orange-600' :
+                                             user.subscriptionTier?.includes('PROMAX') ? 'text-amber-500' :
+                                             user.subscriptionTier?.includes('PRO') ? 'text-blue-500' :
+                                             'text-slate-400'
+                                         }`}>
+                                             {user.subscriptionTier === 'ENTERPRISE' ? 'Gói Enterprise' : 
+                                              user.subscriptionTier === 'PROMAX_YEARLY' ? 'Gói PRO MAX' : 
+                                              user.subscriptionTier === 'PRO' ? 'Gói Professional' : 
+                                              (user.subscriptionTier === 'BASIC' || user.subscriptionTier === 'FREE') ? 'Thành viên thường' : 'Gói ' + user.subscriptionTier}
                                          </span>
                                         {user.subscriptionExpiredAt && (
                                             <span className="text-[7px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">
@@ -154,7 +169,7 @@ const DashboardLayout: React.FC = () => {
                         </nav>
                     </motion.div>
                     
-                    {!isWorker && (
+                    {!isWorker && user?.role !== 'Admin' && (
                         <motion.div 
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}

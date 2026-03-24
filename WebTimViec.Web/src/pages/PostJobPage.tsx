@@ -92,9 +92,10 @@ const PostJobPage: React.FC = () => {
                 ageMax: Number(data.ageMax) || 0
             });
             setShowSuccess(true);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to post job', error);
-            toast.error('Có lỗi xảy ra khi đăng tin.');
+            const msg = error.response?.data || 'Có lỗi xảy ra khi đăng tin.';
+            toast.error(msg);
         } finally {
             setIsSubmitting(false);
         }

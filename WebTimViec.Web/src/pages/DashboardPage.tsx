@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
     Briefcase, Plus, Database, Activity, MapPin, 
-    ChevronRight, Users, Loader2, Search, CheckCircle, Clock4, XCircle, Send, Crown, CreditCard
+    ChevronRight, Users, Loader2, Search, CheckCircle, Clock4, XCircle, Send, Crown, CreditCard, Gem, Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,7 +22,7 @@ interface Job {
 }
 
 const DashboardPage: React.FC = () => {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [myJobs, setMyJobs] = useState<Job[]>([]);
     const [applications, setApplications] = useState<any[]>([]);
     const [invitations, setInvitations] = useState<any[]>([]);
@@ -50,6 +50,9 @@ const DashboardPage: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                // Force refresh user profile to see latest package changes
+                await refreshUser();
+
                 const [jobsRes, appsRes, invRes, subRes] = await Promise.all([
                     jobApi.getMyJobs(),
                     applicationApi.getMyApplications(),
@@ -69,7 +72,7 @@ const DashboardPage: React.FC = () => {
             }
         };
         if (user) fetchData();
-    }, [user]);
+    }, []);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -79,6 +82,19 @@ const DashboardPage: React.FC = () => {
                 return <span className="flex items-center gap-1 bg-red-50 text-red-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase border border-red-100"><XCircle size={10}/> Từ chối</span>;
             default:
                 return <span className="flex items-center gap-1 bg-indigo-50 text-indigo-600 px-2 py-1 rounded-full text-[9px] font-bold uppercase border border-indigo-100"><Clock4 size={10}/> Đang chờ</span>;
+        }
+    };
+    
+    const handleDeleteJob = async (id: string, title: string) => {
+        if (!window.confirm(`Bạn có chắc muốn xóa tin "${title}"?`)) return;
+        
+        try {
+            await jobApi.deleteJob(id);
+            setMyJobs(myJobs.filter(j => j.id !== id));
+            toast.success('Đã xóa tin đăng thành công');
+        } catch (error) {
+            console.error('Failed to delete job', error);
+            toast.error('Không thể xóa tin đăng');
         }
     };
 
@@ -141,10 +157,13 @@ const DashboardPage: React.FC = () => {
                 >
                     <div className="flex justify-between items-start mb-4">
                         <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-                             <Crown size={20} />
+                             {user?.subscriptionTier === 'ENTERPRISE' ? <Gem size={20} /> : 
+                              (user?.subscriptionTier === 'BASIC' || user?.subscriptionTier === 'FREE' || !user?.subscriptionTier) ? <Briefcase size={20} /> : <Crown size={20} />}
                         </div>
-                        <span className={`text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${user?.subscriptionTier ? 'bg-orange-600 text-white' : 'bg-slate-700 text-slate-300'}`}>
-                            {user?.subscriptionTier || 'FREE'}
+                        <span className={`text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+                            (user?.subscriptionTier && user.subscriptionTier !== 'BASIC' && user.subscriptionTier !== 'FREE') ? 'bg-orange-600 text-white' : 'bg-slate-700 text-slate-300'
+                        }`}>
+                            {user?.subscriptionTier === 'BASIC' || user?.subscriptionTier === 'FREE' ? 'THÀNH VIÊN' : (user?.subscriptionTier || 'FREE')}
                         </span>
                     </div>
                     <div>
@@ -170,7 +189,16 @@ const DashboardPage: React.FC = () => {
                                 className="h-full bg-orange-600"
                             />
                         </div>
-                        {user?.subscriptionExpiredAt && (
+                        {user?.role === 'Admin' ? (
+                            <div className="flex justify-between items-center mt-3">
+                                <p className="text-[8px] font-bold text-orange-500 uppercase tracking-widest animate-pulse">
+                                    VĨNH VIỄN
+                                </p>
+                                <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest text-right">
+                                    TRỌN ĐỜI
+                                </p>
+                            </div>
+                        ) : user?.subscriptionExpiredAt && (
                             <div className="flex justify-between items-center mt-3">
                                 <p className="text-[8px] font-bold text-orange-500 uppercase tracking-widest">
                                     {(() => {
@@ -236,9 +264,18 @@ const DashboardPage: React.FC = () => {
                                                     {!job.isApproved && <span className="text-orange-600">Đang chờ duyệt</span>}
                                                 </div>
                                             </div>
-                                            <Link to={`/jobs/${job.id}`} className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center hover:bg-zinc-950 hover:text-white transition-all">
-                                                <ChevronRight size={16} />
-                                            </Link>
+                                            <div className="flex items-center gap-2">
+                                                <button 
+                                                    onClick={() => handleDeleteJob(job.id, job.title)}
+                                                    className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                                                    title="Xóa tin đăng"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                                <Link to={`/jobs/${job.id}`} className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center hover:bg-zinc-950 hover:text-white transition-all">
+                                                    <ChevronRight size={16} />
+                                                </Link>
+                                            </div>
                                         </div>
                                     ))
                                 )}
@@ -266,7 +303,11 @@ const DashboardPage: React.FC = () => {
                                             <div key={item.id} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-xl transition-all">
                                                 <div className="flex justify-between items-start">
                                                     <div>
-                                                        <h5 className="text-xs font-bold text-zinc-900 uppercase mb-2">{item.jobPost?.title || 'Thông tin bài đăng'}</h5>
+                                                        <h5 className="text-xs font-bold text-zinc-900 uppercase mb-2">
+                                                            {(!isWorker && interactionSubTab === 'received' && item.applicant) 
+                                                                ? `Hồ sơ ứng tuyển: ${item.applicant.fullName}` 
+                                                                : (item.jobPost?.title || 'Thông tin bài đăng')}
+                                                        </h5>
                                                         {interactionSubTab === 'received' && item.applicant && (
                                                             <div className="flex items-center gap-2 mb-3">
                                                                 <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 font-bold text-[10px]">
@@ -274,7 +315,9 @@ const DashboardPage: React.FC = () => {
                                                                 </div>
                                                                 <div>
                                                                     <p className="text-[10px] font-bold text-zinc-900 leading-none">{item.applicant.fullName}</p>
-                                                                    <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase">{item.applicant.phone}</p>
+                                                                    <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase">
+                                                                        {item.applicant.phone || 'SĐT: •••• ••• •••'}
+                                                                    </p>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -283,7 +326,10 @@ const DashboardPage: React.FC = () => {
                                                             {getStatusBadge(item.status)}
                                                         </div>
                                                     </div>
-                                                    <Link to={`/jobs/${item.jobPostId}`} className="text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-colors">
+                                                    <Link 
+                                                        to={(!isWorker && interactionSubTab === 'received') ? `/jobs/${item.jobPostId}/applications` : `/jobs/${item.jobPostId}`}
+                                                        className="text-orange-600 p-2 hover:bg-orange-50 rounded-lg transition-colors shrink-0"
+                                                    >
                                                         <ChevronRight size={18} />
                                                     </Link>
                                                 </div>

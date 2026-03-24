@@ -107,14 +107,14 @@ const Navbar: React.FC = () => {
                                     <Link to="/dashboard" className={`block w-9 h-9 rounded-full p-0.5 shadow-lg group-hover:scale-105 transition-all ${
                                         user.subscriptionTier?.includes('PROMAX') ? 'bg-gradient-to-tr from-amber-600 to-amber-300' : 
                                         user.subscriptionTier?.includes('PRO') ? 'bg-gradient-to-tr from-blue-600 to-blue-300' : 
-                                        'bg-gradient-to-tr from-orange-600 to-orange-400'
+                                        'bg-slate-200'
                                     }`}>
                                         <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-zinc-900 font-bold text-xs overflow-hidden">
                                             {user.fullName.charAt(0)}
                                         </div>
                                     </Link>
                                     
-                                    {user.isSubscribed && (
+                                    {user.isSubscribed && user.subscriptionTier !== 'BASIC' && user.subscriptionTier !== 'FREE' && (
                                         <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white shadow-sm ${
                                             user.subscriptionTier?.includes('PROMAX') ? 'bg-amber-500' : 'bg-blue-500'
                                         }`}>
@@ -127,12 +127,14 @@ const Navbar: React.FC = () => {
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Cấp độ tài khoản</p>
                                             <div className="flex items-center space-x-1.5">
                                                 <span className={`text-[11px] font-black uppercase ${
+                                                    user.subscriptionTier === 'ENTERPRISE' ? 'text-orange-600' :
                                                     user.subscriptionTier?.includes('PROMAX') ? 'text-amber-500' : 
                                                     user.subscriptionTier?.includes('PRO') ? 'text-blue-500' : 
-                                                    'text-slate-500'
+                                                    'text-slate-400'
                                                 }`}>
-                                                     {user.subscriptionTier?.includes('PROMAX') ? 'Thành viên PRO MAX' : 
-                                                      user.subscriptionTier?.includes('PRO') ? 'Thành viên PRO' : 
+                                                     {user.subscriptionTier === 'ENTERPRISE' ? 'Gói Enterprise' : 
+                                                      user.subscriptionTier?.includes('PROMAX') ? 'Gói PRO MAX' : 
+                                                      user.subscriptionTier === 'PRO' ? 'Gói Professional' : 
                                                       'Thành viên thường'}
                                                 </span>
                                             </div>

@@ -112,7 +112,7 @@ namespace WebTimViec.Api.Services
                 foreach (var theByte in hashValue)
                 {
                     // Use lowercase "x2" to match Demo behavior
-                    hash.Append(theByte.ToString("x2"));
+                    hash.Append(theByte.ToString("X2"));
                 }
             }
             return hash.ToString();

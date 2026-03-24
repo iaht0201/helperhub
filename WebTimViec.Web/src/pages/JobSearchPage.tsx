@@ -93,7 +93,7 @@ const JobSearchPage: React.FC = () => {
         // ONLY show if BOTH are missing from the DB profile AND not dismissed this session
         const hasSkills = !!(user as any).skills;
         const hasLocation = !!(user as any).address;
-        const wasDismissed = sessionStorage.getItem('pref_modal_dismissed');
+        const wasDismissed = localStorage.getItem('pref_modal_dismissed');
 
         if (!hasSkills && !hasLocation && !wasDismissed && isHomePage) {
              setShowPrefModal(true);
@@ -284,7 +284,7 @@ const JobSearchPage: React.FC = () => {
         else newParams.delete('location');
         setSearchParams(newParams);
         setShowPrefModal(false);
-        sessionStorage.setItem('pref_modal_dismissed', 'true');
+        localStorage.setItem('pref_modal_dismissed', 'true');
     };
 
     return (
@@ -296,7 +296,7 @@ const JobSearchPage: React.FC = () => {
                         categories={categories}
                         onClose={() => {
                             setShowPrefModal(false);
-                            sessionStorage.setItem('pref_modal_dismissed', 'true');
+                            localStorage.setItem('pref_modal_dismissed', 'true');
                         }} 
                         onSave={savePreferences}
                     />
@@ -707,7 +707,7 @@ const PreferenceSelectionModal = ({ categories, onClose, onSave }: { categories:
                             Bỏ qua
                         </button>
                         <button 
-                            disabled={selected.length === 0 || !location}
+                            disabled={selected.length === 0 && (!location || location === 'All')}
                             onClick={() => onSave(selected, location)}
                             className="bg-zinc-900 text-white px-10 py-4 rounded-xl font-semibold uppercase tracking-[0.2em] text-xs hover:bg-orange-600 transition-all disabled:opacity-20 disabled:grayscale shadow-xl shadow-zinc-950/20 active:scale-95"
                         >

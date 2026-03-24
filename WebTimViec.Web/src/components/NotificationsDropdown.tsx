@@ -3,6 +3,7 @@ import { Bell, Check, Clock, Info, UserPlus, FileCheck, CreditCard } from 'lucid
 import { motion, AnimatePresence } from 'framer-motion';
 import { notificationApi } from '../api/notificationApi';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 interface Notification {
     id: string;
@@ -31,7 +32,33 @@ const NotificationsDropdown: React.FC<Props> = ({ textColorClass }) => {
     const fetchNotifications = async () => {
         try {
             const res = await notificationApi.getNotifications();
-            setNotifications(res.data);
+            const newNotifications = res.data as Notification[];
+            
+            // CRITICAL FIX: Only toast for notifications that appear AFTER the very first fetch
+            if (notifications.length > 0) {
+                const currentIds = notifications.map(n => n.id);
+                newNotifications.forEach(n => {
+                    if (!n.isRead && !currentIds.includes(n.id)) {
+                        toast.success(n.title + ": " + n.message, {
+                            icon: '🔔',
+                            duration: 4000,
+                            position: 'top-right',
+                            style: {
+                                borderRadius: '1rem',
+                                background: '#111',
+                                color: '#fff',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                textTransform: 'uppercase',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                backdropFilter: 'blur(10px)'
+                            }
+                        });
+                    }
+                });
+            }
+
+            setNotifications(newNotifications);
         } catch (err) {
             console.error(err);
         }
@@ -99,21 +126,21 @@ const NotificationsDropdown: React.FC<Props> = ({ textColorClass }) => {
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-3 w-80 md:w-96 bg-white rounded-[2rem] shadow-2xl border border-slate-50 overflow-hidden z-50 origin-top-right"
+                            className="absolute right-0 mt-3 w-80 md:w-96 bg-zinc-900 border border-white/5 shadow-2xl rounded-[2.5rem] overflow-hidden z-50 origin-top-right backdrop-blur-xl"
                         >
-                            <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                                <h3 className="text-xs font-bold text-zinc-950 uppercase tracking-widest">Thông báo hệ thống</h3>
+                            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-zinc-950/20">
+                                <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">Thông báo</h3>
                                 {unreadCount > 0 && (
                                     <button 
                                         onClick={markAllAsRead}
-                                        className="text-[9px] font-bold text-orange-600 uppercase tracking-widest hover:underline"
+                                        className="text-[8px] font-bold text-orange-500 uppercase tracking-widest hover:underline"
                                     >
-                                        Đánh dấu đã đọc
+                                        Đã đọc tất cả
                                     </button>
                                 )}
                             </div>
 
-                            <div className="max-h-[400px] overflow-y-auto no-scrollbar">
+                            <div className="max-h-[min(450px,70vh)] overflow-y-auto no-scrollbar py-2">
                                 {notifications.length === 0 ? (
                                     <div className="py-12 flex flex-col items-center justify-center text-slate-300">
                                         <Bell size={40} className="mb-4 opacity-20" />
@@ -124,19 +151,20 @@ const NotificationsDropdown: React.FC<Props> = ({ textColorClass }) => {
                                         <div 
                                             key={n.id}
                                             onClick={() => handleNotificationClick(n)}
-                                            className={`p-5 border-b border-slate-50 flex gap-4 hover:bg-slate-50 transition-colors cursor-pointer relative ${!n.isRead ? 'bg-orange-50/30' : ''}`}
+                                            className={`p-5 flex gap-4 hover:bg-white/5 transition-all cursor-pointer relative group ${!n.isRead ? 'bg-orange-600/5' : ''}`}
                                         >
-                                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0">
+                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-all ${!n.isRead ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' : 'bg-zinc-800 text-zinc-500 group-hover:bg-zinc-700'}`}>
                                                 {getIcon(n.type)}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="text-[11px] font-bold text-zinc-950 uppercase tracking-tight truncate pr-4">{n.title}</h4>
-                                                    {!n.isRead && <div className="w-2 h-2 rounded-full bg-orange-600 mt-1 shrink-0"></div>}
+                                                    <h4 className="text-[11px] font-bold text-white uppercase tracking-tight truncate pr-4">{n.title}</h4>
+                                                    {!n.isRead && <div className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5 shrink-0 shadow-lg shadow-orange-600/50"></div>}
                                                 </div>
-                                                <p className="text-[10px] font-medium text-slate-500 leading-relaxed line-clamp-2">{n.message}</p>
-                                                <div className="mt-2 flex items-center text-[8px] font-bold text-slate-300 uppercase tracking-widest">
-                                                    <Clock size={8} className="mr-1" /> {new Date(n.createdAt).toLocaleDateString('vi-VN')} {new Date(n.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                <p className="text-[10px] font-medium text-zinc-400 leading-relaxed line-clamp-2">{n.message}</p>
+                                                <div className="mt-2 flex items-center text-[8px] font-bold text-zinc-600 uppercase tracking-widest">
+                                                    <Clock size={10} className="mr-1.5 text-orange-500" /> 
+                                                    {new Date(n.createdAt).toLocaleDateString('vi-VN')}
                                                 </div>
                                             </div>
                                         </div>
@@ -147,7 +175,7 @@ const NotificationsDropdown: React.FC<Props> = ({ textColorClass }) => {
                             <Link 
                                 to="/dashboard" 
                                 onClick={() => setIsOpen(false)}
-                                className="block w-full py-4 text-center text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] bg-slate-50 border-t border-slate-100 hover:text-orange-600 transition-colors"
+                                className="block w-full py-5 text-center text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em] bg-zinc-950/50 border-t border-white/5 hover:text-orange-500 hover:bg-zinc-950 transition-all"
                             >
                                 Xem tất cả hoạt động
                             </Link>

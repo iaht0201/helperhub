@@ -57,29 +57,44 @@ namespace WebTimViec.Api.Services
 
             if (user != null)
             {
-                var activeSub = user.Subscriptions?.FirstOrDefault(s => s.IsActive && s.ExpiredAt > VNTime.Now);
-                int maxPosts = activeSub?.ServicePackage?.MaxJobPosts ?? 3; // Default 3 for free/unknown
-
-                if (maxPosts != -1)
+                // 1. Skip limit check for Admin
+                if (user.Role == "Admin")
                 {
-                    var currentPostsCount = await _context.JobPosts.CountAsync(j => j.UserId == job.UserId);
-                    if (currentPostsCount >= maxPosts)
-                    {
-                        throw new InvalidOperationException($"Bạn đã đạt giới hạn tối đa {maxPosts} tin đăng cho gói hiện tại. Vui lòng nâng cấp để đăng thêm!");
+                    job.IsApproved = true;
+                    job.IsPriority = true;
+                }
+                else 
+                {
+                    var activeSub = user.Subscriptions?.FirstOrDefault(s => s.IsActive && s.ExpiredAt > VNTime.Now);
+                    var package = activeSub?.ServicePackage;
+                    
+                    if (package == null) {
+                        package = await _context.ServicePackages.FirstOrDefaultAsync(p => p.Code == "BASIC");
                     }
-                }
 
-                // 2. Handle Approval and Priority based on Package
-                if (activeSub != null && activeSub.ServicePackage != null)
-                {
-                    job.IsApproved = !activeSub.ServicePackage.NeedsApproval;
-                    job.IsPriority = activeSub.ServicePackage.IsPriority;
-                }
-                else
-                {
-                    // Default for visitors/free users if any
-                    job.IsApproved = true; // Or false, depending on site policy
-                    job.IsPriority = false;
+                    int maxPosts = package?.MaxJobPosts ?? 1;
+
+                    if (maxPosts != -1)
+                    {
+                        var currentPostsCount = await _context.JobPosts.CountAsync(j => j.UserId == job.UserId);
+                        if (currentPostsCount >= maxPosts)
+                        {
+                            throw new InvalidOperationException($"Bạn đã đạt giới hạn tối đa {maxPosts} tin đăng cho gói hiện tại. Vui lòng nâng cấp để đăng thêm!");
+                        }
+                    }
+
+                    // 2. Handle Approval and Priority based on Package
+                    if (package != null)
+                    {
+                        job.IsApproved = !package.NeedsApproval;
+                        job.IsPriority = package.IsPriority;
+                    }
+                    else
+                    {
+                        // Final safety default
+                        job.IsApproved = false; 
+                        job.IsPriority = false;
+                    }
                 }
             }
 
@@ -221,7 +236,12 @@ namespace WebTimViec.Api.Services
             if (user == null) return false;
 
             var activeSub = user.Subscriptions?.FirstOrDefault(s => s.IsActive && s.ExpiredAt > VNTime.Now);
-            int maxViews = activeSub?.ServicePackage?.MaxViews ?? 1; // Default for free users is 1
+            var package = activeSub?.ServicePackage;
+            if (package == null) {
+                package = await _context.ServicePackages.FirstOrDefaultAsync(p => p.Code == "BASIC");
+            }
+
+            int maxViews = package?.MaxViews ?? 1;
 
             if (maxViews == -1 || user.ConsumedViews < maxViews)
             {

@@ -23,8 +23,40 @@ const PaymentSuccessPage: React.FC = () => {
     const isSuccess = responseCode === '00';
 
     useEffect(() => {
-        if (isSuccess) toast.success('Thanh toán thành công!');
-        else if (responseCode) toast.error('Giao dịch không thành công!');
+        const confirmPayment = async () => {
+            if (isSuccess && responseCode === '00') {
+                try {
+                    toast.loading('Đang kích hoạt gói dịch vụ...', { id: 'payment-confirm' });
+                    // Explicitly call the API through Ngrok (or localhost) to trigger the DB update
+                    // Prefer local API in development to avoid ngrok limits/delays
+                    const isLocal = window.location.hostname === 'localhost';
+                    const apiUrl = isLocal 
+                        ? 'http://localhost:5281/api' 
+                        : (import.meta.env.VITE_API_URL || 'https://joint-honest-lark.ngrok-free.app/api');
+                    
+                    const response = await fetch(`${apiUrl}/webhook/vnpay-ipn${window.location.search}`, {
+                        headers: {
+                            'ngrok-skip-browser-warning': 'true'
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.RspCode === '00') {
+                        toast.success('Kích hoạt tài khoản thành công!', { id: 'payment-confirm' });
+                        // Refresh user data or redirect after success
+                    } else {
+                        toast.error('Có lỗi khi xác thực giao dịch!', { id: 'payment-confirm' });
+                    }
+                } catch (error) {
+                    console.error('Error confirming payment:', error);
+                    toast.error('Không thể kết nối tới máy chủ để xác nhận!', { id: 'payment-confirm' });
+                }
+            } else if (responseCode) {
+                toast.error('Giao dịch không thành công!', { id: 'payment-confirm' });
+            }
+        };
+
+        confirmPayment();
     }, [isSuccess, responseCode]);
 
     if (!isSuccess && responseCode) {

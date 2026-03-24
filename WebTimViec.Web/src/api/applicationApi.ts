@@ -6,5 +6,6 @@ export const applicationApi = {
     getJobApplications: (jobId: string) => apiClient.get(`/Application/job/${jobId}`),
     updateStatus: (id: string, status: string) => apiClient.put(`/Application/${id}/status`, { status }),
     getMyInvitations: () => apiClient.get('/Application/invitations'),
+    viewApplicant: (applicantId: string) => apiClient.post(`/Application/view-applicant/${applicantId}`),
 };
 

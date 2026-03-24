@@ -15,11 +15,13 @@ namespace WebTimViec.Api.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IJobService _jobService;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<WebTimViec.Api.Hubs.ChatHub> _hubContext;
 
-        public ApplicationController(AppDbContext context, IJobService jobService)
+        public ApplicationController(AppDbContext context, IJobService jobService, Microsoft.AspNetCore.SignalR.IHubContext<WebTimViec.Api.Hubs.ChatHub> hubContext)
         {
             _context = context;
             _jobService = jobService;
+            _hubContext = hubContext;
         }
 
         [HttpPost("{jobId}")]
@@ -41,7 +43,12 @@ namespace WebTimViec.Api.Controllers
                 .Include(s => s.ServicePackage)
                 .FirstOrDefaultAsync(s => s.UserId == userId && s.IsActive && s.ExpiredAt > DateTime.UtcNow);
 
-            int maxApps = activeSub?.ServicePackage?.MaxApplications ?? 1; // 1 for free
+            var package = activeSub?.ServicePackage;
+            if (package == null) {
+                package = await _context.ServicePackages.FirstOrDefaultAsync(p => p.Code == "BASIC");
+            }
+            
+            int maxApps = package?.MaxApplications ?? 1;
             
             if (user.Role != "Admin" && maxApps != -1)
             {
@@ -92,6 +99,17 @@ namespace WebTimViec.Api.Controllers
             }
 
             await _context.SaveChangesAsync();
+            
+            // Real-time Notify via SignalR
+            try {
+                // To Job/Profile Owner
+                await _hubContext.Clients.Group(job.UserId.ToString()).SendAsync("ReceiveNotification", new { 
+                    Title = job.IsForWorker ? "Bạn có lời mời công việc mới" : "Có ứng viên ứng tuyển mới",
+                    Message = $"'{user.FullName}' vừa {(job.IsForWorker ? "mời" : "ứng tuyển")} vào tin '{job.Title}' của bạn.",
+                    Type = job.IsForWorker ? "Invitation" : "Application"
+                });
+            } catch { /* Silent */ }
+
             return Ok(application);
         }
 

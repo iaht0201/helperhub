@@ -12,10 +12,12 @@ namespace WebTimViec.Api.Controllers
     public class AdminController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<WebTimViec.Api.Hubs.ChatHub> _hubContext;
 
-        public AdminController(AppDbContext context)
+        public AdminController(AppDbContext context, Microsoft.AspNetCore.SignalR.IHubContext<WebTimViec.Api.Hubs.ChatHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         [HttpGet("stats")]
@@ -145,6 +147,19 @@ namespace WebTimViec.Api.Controllers
             if (user == null) return NotFound();
 
             user.IsActive = !user.IsActive;
+            
+            // Notify user
+            _context.Notifications.Add(new Notification
+            {
+                UserId = id,
+                Title = user.IsActive ? "Tài khoản đã mở khóa" : "Tài khoản bị tạm khóa",
+                Message = user.IsActive 
+                    ? "Tài khoản của bạn đã được quản trị viên mở khóa. Bạn có thể tiếp tục sử dụng dịch vụ." 
+                    : "Tài khoản của bạn đã bị tạm khóa do vi phạm quy định hoặc đang được kiểm tra. Vui lòng liên hệ hỗ trợ để biết thêm chi tiết.",
+                Type = "AccountStatus",
+                CreatedAt = DateTime.UtcNow
+            });
+
             await _context.SaveChangesAsync();
             return Ok(new { user.IsActive });
         }
@@ -155,7 +170,38 @@ namespace WebTimViec.Api.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound();
             
+            // 1. Manually identify all dependencies across all tables
+            var userJobs = await _context.JobPosts.Where(j => j.UserId == id).ToListAsync();
+            var userApps = await _context.Applications.Where(a => a.ApplicantId == id).ToListAsync();
+            var userSubs = await _context.Subscriptions.Where(s => s.UserId == id).ToListAsync();
+            var userNotifs = await _context.Notifications.Where(n => n.UserId == id).ToListAsync();
+            var userViews = await _context.UserJobViews.Where(v => v.UserId == id || v.ViewedUserId == id).ToListAsync();
+            var userMsgs = await _context.Messages.Where(m => m.SenderId == id || m.ReceiverId == id).ToListAsync();
+
+            // 2. Identify and remove all dependencies of the user's JobPosts (Applications, messages, views from other users)
+            foreach(var job in userJobs) {
+                var jobApps = await _context.Applications.Where(a => a.JobPostId == job.Id).ToListAsync();
+                var jobViews = await _context.UserJobViews.Where(v => v.JobPostId == job.Id).ToListAsync();
+                var jobMsgs = await _context.Messages.Where(m => m.JobPostId == job.Id).ToListAsync();
+                _context.Applications.RemoveRange(jobApps);
+                _context.UserJobViews.RemoveRange(jobViews);
+                _context.Messages.RemoveRange(jobMsgs);
+            }
+
+            // 3. Queue direct user dependencies for removal
+            _context.Applications.RemoveRange(userApps);
+            _context.Subscriptions.RemoveRange(userSubs);
+            _context.Notifications.RemoveRange(userNotifs);
+            _context.UserJobViews.RemoveRange(userViews);
+            _context.Messages.RemoveRange(userMsgs);
+
+            // 4. Save changes once to clear ALL foreign key references to the jobs and the user
+            await _context.SaveChangesAsync();
+
+            // 5. Now it is safe to remove the JobPosts and the User
+            _context.JobPosts.RemoveRange(userJobs);
             _context.Users.Remove(user);
+            
             await _context.SaveChangesAsync();
             return Ok();
         }
@@ -196,6 +242,12 @@ namespace WebTimViec.Api.Controllers
             _context.Notifications.Add(notification);
 
             await _context.SaveChangesAsync();
+            
+            // Real-time Notify via SignalR
+            try {
+                await _hubContext.Clients.Group(job.UserId.ToString()).SendAsync("ReceiveNotification", notification);
+            } catch { /* Silent */ }
+
             return Ok();
         }
 
@@ -204,6 +256,17 @@ namespace WebTimViec.Api.Controllers
         {
             var job = await _context.JobPosts.FindAsync(id);
             if (job == null) return NotFound();
+
+            // Notify user about deletion (before removing from DB)
+            var notification = new Notification
+            {
+                UserId = job.UserId,
+                Title = "Tin đăng bị gỡ bỏ",
+                Message = $"Tin đăng '{job.Title}' của bạn đã bị gỡ bỏ bởi quản trị viên do vi phạm quy định nội dung của HelperHub.",
+                Type = "System",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Notifications.Add(notification);
 
             _context.JobPosts.Remove(job);
             await _context.SaveChangesAsync();
@@ -282,6 +345,55 @@ namespace WebTimViec.Api.Controllers
             });
 
             return Ok(result);
+        }
+
+        // Job Category Management
+        [HttpGet("categories")]
+        public async Task<IActionResult> GetAdminCategories()
+        {
+            return Ok(await _context.JobCategories.OrderBy(c => c.Name).ToListAsync());
+        }
+
+        [HttpPost("categories")]
+        public async Task<IActionResult> CreateCategory([FromBody] JobCategory category)
+        {
+            category.Id = Guid.NewGuid();
+            category.CreatedAt = DateTime.UtcNow;
+            _context.JobCategories.Add(category);
+            await _context.SaveChangesAsync();
+            return Ok(category);
+        }
+
+        [HttpPut("categories/{id}")]
+        public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] JobCategory categoryData)
+        {
+            var category = await _context.JobCategories.FindAsync(id);
+            if (category == null) return NotFound();
+
+            category.Name = categoryData.Name;
+            category.Code = categoryData.Code;
+            category.IconName = categoryData.IconName;
+            category.IsActive = categoryData.IsActive;
+
+            await _context.SaveChangesAsync();
+            return Ok(category);
+        }
+
+        [HttpDelete("categories/{id}")]
+        public async Task<IActionResult> DeleteCategory(Guid id)
+        {
+            var category = await _context.JobCategories.FindAsync(id);
+            if (category == null) return NotFound();
+
+            // Check if any jobs use this category
+            if (await _context.JobPosts.AnyAsync(j => j.JobCategoryId == id))
+            {
+                return BadRequest("Không thể xóa danh mục đang có tin tuyển dụng. Hãy chuyển các tin sang danh mục khác trước.");
+            }
+
+            _context.JobCategories.Remove(category);
+            await _context.SaveChangesAsync();
+            return Ok();
         }
     }
 }

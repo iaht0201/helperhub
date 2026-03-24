@@ -96,8 +96,15 @@ namespace WebTimViec.Api.Controllers
             job.UserId = Guid.Parse(userIdStr);
             job.CreatedAt = DateTime.UtcNow;
 
-            var result = await _jobService.CreateJob(job);
-            return Ok(result);
+            try 
+            {
+                var result = await _jobService.CreateJob(job);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]

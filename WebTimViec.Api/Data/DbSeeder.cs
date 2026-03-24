@@ -217,15 +217,15 @@ namespace WebTimViec.Api.Data
                 new ServicePackage { 
                     Id = Guid.Parse("b1111111-1111-1111-1111-111111111111"), Code = "BASIC", Name = "Gói Basic", 
                     Price = 0, Days = 30, Description = "Dành cho người dùng mới trải nghiệm. Xem 1 hồ sơ ứng tuyển & 1 hồ sơ tìm việc. Hỗ trợ 24/7.", 
-                    MaxViews = 2, MaxApplications = 1, MaxJobPosts = 1, 
+                    MaxViews = 1, MaxApplications = 1, MaxJobPosts = 1, 
                     NeedsApproval = true, IsPriority = false, SupportLevel = "24/7 Support", AllowRoleSwitch = false,
                     CreatedAt = VNTime.Now 
                 },
                 new ServicePackage { 
                     Id = Guid.Parse("b2222222-2222-2222-2222-222222222222"), Code = "PRO", Name = "Gói Professional", 
-                    Price = 199000, Days = 30, Description = "Xem 10 hồ sơ ứng tuyển & 10 hồ sơ tìm việc. Duyệt tin tức thì, ưu tiên tin top. Hỗ trợ nhanh 24/7.", 
+                    Price = 199000, Days = 30, Description = "Xem 10 hồ sơ ứng tuyển & 10 hồ sơ tìm việc. Ưu tiên duyệt tin nhanh, hiển thị tin top. Hỗ trợ nhanh 24/7.", 
                     MaxViews = 20, MaxApplications = 10, MaxJobPosts = 10, 
-                    NeedsApproval = false, IsPriority = true, SupportLevel = "Fast Support", AllowRoleSwitch = false,
+                    NeedsApproval = true, IsPriority = true, SupportLevel = "Fast Support", AllowRoleSwitch = false,
                     CreatedAt = VNTime.Now 
                 },
                 new ServicePackage { 
